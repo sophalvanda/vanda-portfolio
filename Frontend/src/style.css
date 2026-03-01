@@ -1,0 +1,21 @@
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+
+:root {
+  --dba-bg: #030712;        /* Midnight background */
+  --dba-card: #0f172a;      /* Deep slate card */
+  --dba-accent: #00d4ff;    /* Cyber Blue accent */
+  --dba-primary: #0ea5e9;   /* Main Blue */
+}
+
+body {
+  background-color: var(--dba-bg) !important;
+  color: #f8fafc !important;
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+}
+
+/* Custom transitions for a premium feel */
+.btn, .card, .nav-link {
+  transition: all 0.3s ease-in-out;
+}
