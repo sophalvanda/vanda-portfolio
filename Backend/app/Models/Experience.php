@@ -1,15 +1,26 @@
 <?php
+
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Experience extends Model
 {
-    protected $fillable = ['company', 'position', 'start_date', 'end_date', 'description', 'tools'];
+    use HasFactory;
 
+    protected $fillable = [
+        'role',
+        'company',
+        'period',
+        'points'
+    ];
+
+    /**
+     * The attributes that should be cast.
+     * This allows you to treat the JSON column as a native PHP array.
+     */
     protected $casts = [
-        'start_date' => 'date',
-        'end_date' => 'date',
-        'tools' => 'array', // Critical to handle JSON correctly
+        'points' => 'array',
     ];
 }

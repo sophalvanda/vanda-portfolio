@@ -1,18 +1,29 @@
 <?php
+
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-// use App\Http\Controllers\Api\PortfolioController;
-use App\Http\Controllers\ProjectController;
-use App\Http\Controllers\SkillController;
-use App\Http\Controllers\ExperienceController;
-use App\Http\Controllers\MessageController;
 
-// Main Portfolio Data (The "One-Stop" Shop)
-// Route::get('/portfolio-data', [PortfolioController::class, 'index']);
+// Import all your individual controllers
+use App\Http\Controllers\Api\ExperienceController;
+use App\Http\Controllers\Api\SkillController;
+use App\Http\Controllers\Api\CertificationController;
+use App\Http\Controllers\Api\ToolController;
+use App\Http\Controllers\Api\ProjectController;
 
-// Individual Endpoints
-// Route::get('/projects', [ProjectController::class, 'index']);
-// Route::get('/skills', [SkillController::class, 'index']);
-// Route::get('/experiences', [ExperienceController::class, 'index']);
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+*/
 
-// // Public Contact Form
-// Route::post('/contact', [MessageController::class, 'store']);
+// Grouping routes for the Portfolio
+Route::prefix('v1')->group(function () {
+    
+    // Each line below creates 5 routes (Index, Store, Show, Update, Destroy)
+    Route::apiResource('experiences', ExperienceController::class);
+    Route::apiResource('skills', SkillController::class);
+    Route::apiResource('certifications', CertificationController::class);
+    Route::apiResource('tools', ToolController::class);
+    Route::apiResource('projects', ProjectController::class);
+
+});

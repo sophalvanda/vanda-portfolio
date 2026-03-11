@@ -1,13 +1,17 @@
 <?php
+
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Certification extends Model
 {
-    protected $fillable = ['title', 'issuer', 'issue_date', 'verification_url'];
+    use HasFactory;
 
-    protected $casts = [
-        'issue_date' => 'date',
+    protected $fillable = [
+        'name',
+        'issuer',
+        'icon'
     ];
 }
