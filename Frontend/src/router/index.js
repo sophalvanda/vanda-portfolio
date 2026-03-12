@@ -2,20 +2,28 @@ import { createRouter, createWebHistory } from 'vue-router';
 import AdminLayout from '../views/admin/AdminLayout.vue';
 import Dashboard from '../views/admin/dashboard.vue';
 import Experience from '../views/admin/experience.vue';
+// 1. Import your webpage component
+import Webpage from '../views/webpage/webpage.vue'; 
 
 const routes = [
+  // 2. Add the route for the main portfolio page
+  {
+    path: '/',
+    name: 'Portfolio',
+    component: Webpage,
+  },
   {
     path: '/admin',
-    component: AdminLayout, // The layout component is defined here
+    component: AdminLayout,
     redirect: '/admin/dashboard',
     children: [
       {
         path: 'dashboard',
-        component: Dashboard, // Renders inside <router-view> within AdminLayout
+        component: Dashboard,
       },
       {
         path: 'experience',
-        component: Experience, // Renders inside <router-view> within AdminLayout
+        component: Experience,
       },
     ],
   },
