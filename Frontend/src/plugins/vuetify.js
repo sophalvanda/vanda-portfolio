@@ -1,5 +1,5 @@
 import '@mdi/font/css/materialdesignicons.css' // Icons loaded first
-import 'vuetify/styles' // Core Vuetify styles
+import 'vuetify/styles' // This is the line failing
 import '../assets/variables.scss' // Your custom overrides last
 
 import { createVuetify } from 'vuetify'
