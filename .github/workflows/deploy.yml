@@ -6,13 +6,9 @@ on:
       - main
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
-
     steps:
-
     - name: Checkout Code
       uses: actions/checkout@v3
 
@@ -22,17 +18,14 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build Backend Image
+    - name: Build and Push Backend
       run: |
         docker build -t ${{ secrets.DOCKER_USERNAME }}/vanda-backend ./backend
+        docker push ${{ secrets.DOCKER_USERNAME }}/vanda-backend
 
-    - name: Build Frontend Image
+    - name: Build and Push Frontend
       run: |
         docker build -t ${{ secrets.DOCKER_USERNAME }}/vanda-frontend ./frontend
-
-    - name: Push Images
-      run: |
-        docker push ${{ secrets.DOCKER_USERNAME }}/vanda-backend
         docker push ${{ secrets.DOCKER_USERNAME }}/vanda-frontend
 
     - name: Deploy to Server
@@ -42,14 +35,37 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
+          cd ~/vanda-portfolio
+          
+          # Pull latest images
           docker pull ${{ secrets.DOCKER_USERNAME }}/vanda-backend
           docker pull ${{ secrets.DOCKER_USERNAME }}/vanda-frontend
 
-          docker stop laravel_backend || true
-          docker stop vue_frontend || true
+          # Stop and remove old containers
+          docker stop laravel_backend vue_frontend || true
+          docker rm laravel_backend vue_frontend || true
 
-          docker rm laravel_backend || true
-          docker rm vue_frontend || true
+          # START BACKEND
+          # Note: We use --network so it can talk to your 'db' container
+          docker run -d \
+            --name laravel_backend \
+            --network vanda-portfolio_default \
+            --restart unless-stopped \
+            -p 9000:9000 \
+            ${{ secrets.DOCKER_USERNAME }}/vanda-backend
 
-          docker run -d -p 9000:9000 --name laravel_backend ${{ secrets.DOCKER_USERNAME }}/vanda-backend
-          docker run -d -p 5173:5173 --name vue_frontend ${{ secrets.DOCKER_USERNAME }}/vanda-frontend
+          # START FRONTEND
+          docker run -d \
+            --name vue_frontend \
+            --network vanda-portfolio_default \
+            --restart unless-stopped \
+            -p 80:5173 \
+            ${{ secrets.DOCKER_USERNAME }}/vanda-frontend
+
+          # FIX PERMISSIONS (The "Permission Denied" Fix)
+          docker exec -u root laravel_backend chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+          docker exec -u root laravel_backend chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+          
+          # RUN MIGRATIONS
+          docker exec laravel_backend php artisan migrate --force
+          docker exec laravel_backend php artisan config:cache
