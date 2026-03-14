@@ -3,22 +3,24 @@ version: '3'
 services:
   mysql_db:
     image: mysql:8.0
-    container_name: db
+    container_name: mysql_db
     restart: always
     environment:
+      # Only need the root password and database name for initialization
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: vanda_portfolio
-      MYSQL_USER: root
-      MYSQL_PASSWORD: root
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+
   backend:
     build: ./backend
     container_name: laravel_backend
     ports:
       - "9000:9000"
+    depends_on:
+      - mysql_db
 
   frontend:
     build: ./frontend
@@ -37,3 +39,7 @@ services:
     depends_on:
       - backend
       - frontend
+
+# THIS BLOCK WAS MISSING
+volumes:
+  mysql_data:
