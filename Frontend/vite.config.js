@@ -1,17 +1,13 @@
+import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import vuetify from 'vite-plugin-vuetify'
-import path from 'path'
 
 export default defineConfig({
-  plugins: [
-    vue(),
-    vuetify({ autoImport: true }),
-  ],
-  server: {
-    fs: {
-      // Allow serving files from one level up to the project root
-      allow: ['..']
+  plugins: [vue()],
+  resolve: {
+    alias: {
+      // This line tells Vite that @ means the /src directory
+      '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   }
 })

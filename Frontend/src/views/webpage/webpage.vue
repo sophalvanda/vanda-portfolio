@@ -88,7 +88,7 @@
             <v-col v-for="(skill, i) in coreSkills" :key="skill.name" cols="12" sm="6" md="4">
               <v-card flat class="pa-8 rounded-xl h-100 skill-card-animated border-subtle" :style="{ 'transition-delay': i * 100 + 'ms' }">
                 <v-avatar color="blue-lighten-5" rounded="lg" size="50" class="mb-6 icon-bounce">
-                  <v-icon color="primary">{{ skill.icon }}</v-icon>
+                  <v-icon color="primary">{{ skill.icon || 'mdi-cube-outline' }}</v-icon>
                 </v-avatar>
                 <h3 class="text-h6 font-weight-bold mb-3">{{ skill.name }}</h3>
                 <p class="text-body-2 text-grey-darken-1">{{ skill.description }}</p>
@@ -109,21 +109,16 @@
             <v-col>
               <v-row class="mb-4">
                 <v-col cols="12" sm="8">
-                  <h3 class="text-h5 font-weight-bold mb-1">{{ exp.role }}</h3>
+                  <h3 class="text-h5 font-weight-bold mb-1">{{ exp.title }}</h3>
                   <p class="text-subtitle-1 text-primary font-weight-bold">{{ exp.company }}</p>
                 </v-col>
                 <v-col cols="12" sm="4" class="text-sm-right">
-                  <v-chip color="blue-lighten-4" text-color="primary" class="font-weight-black px-4">{{ exp.period }}</v-chip>
+                  <v-chip color="blue-lighten-4" text-color="primary" class="font-weight-black px-4">
+                    {{ exp.start_date }} - {{ exp.end_date || 'Present' }}
+                  </v-chip>
                 </v-col>
               </v-row>
-              <v-list density="compact" class="bg-transparent pa-0">
-                <v-list-item v-for="point in exp.points" :key="point" class="pa-0 mb-2 list-item-reveal">
-                  <template v-slot:prepend>
-                    <v-icon color="primary" size="20" class="mr-2">mdi-check-circle-outline</v-icon>
-                  </template>
-                  <span class="text-body-2 text-grey-darken-2">{{ point }}</span>
-                </v-list-item>
-              </v-list>
+              <p class="text-body-2 text-grey-darken-2">{{ exp.description }}</p>
             </v-col>
           </v-row>
         </div>
@@ -135,31 +130,13 @@
           <v-row justify="center">
             <v-col v-for="tool in tools" :key="tool.name" cols="4" sm="3" md="2">
               <v-card flat color="rgba(255,255,255,0.15)" class="py-6 rounded-xl text-center tool-card-glow">
-                <v-icon color="white" size="32" class="mb-2">{{ tool.icon }}</v-icon>
+                <v-icon color="white" size="32" class="mb-2">{{ tool.icon || 'mdi-wrench' }}</v-icon>
                 <div class="text-caption text-white font-weight-bold text-uppercase">{{ tool.name }}</div>
               </v-card>
             </v-col>
           </v-row>
         </v-container>
       </div>
-
-      <v-container class="py-16">
-        <div class="text-center mb-12 animate-fade-up">
-          <h2 class="text-h4 font-weight-black mb-2">Professional Certifications</h2>
-          <p class="text-subtitle-1 text-grey-darken-1">Validated expertise in enterprise database management.</p>
-        </div>
-        <v-row justify="center">
-          <v-col v-for="cert in certifications" :key="cert.name" cols="12" md="4">
-            <v-card flat border class="pa-10 rounded-xl text-center h-100 bg-white shadow-subtle animate-zoom-in">
-              <v-avatar color="blue-lighten-5" size="70" class="mb-6">
-                <v-icon color="primary" size="32">{{ cert.icon }}</v-icon>
-              </v-avatar>
-              <h3 class="text-h6 font-weight-bold mb-1">{{ cert.name }}</h3>
-              <div class="text-overline font-weight-black text-primary">{{ cert.issuer }}</div>
-            </v-card>
-          </v-col>
-        </v-row>
-      </v-container>
 
       <v-container class="py-16">
         <v-row class="bg-white rounded-2xl border-subtle pa-6 pa-md-12 align-center animate-fade-up">
@@ -184,40 +161,18 @@
                 <v-row dense>
                   <v-col cols="12" class="mb-2">
                     <label class="text-caption font-weight-black ml-1">Full Name</label>
-                    <v-text-field 
-                      v-model="contactForm.full_name" 
-                      placeholder="John Doe" 
-                      variant="solo" flat rounded="lg" class="mt-1"
-                      required
-                    ></v-text-field>
+                    <v-text-field v-model="contactForm.full_name" variant="solo" flat rounded="lg" class="mt-1" required></v-text-field>
                   </v-col>
                   <v-col cols="12" class="mb-2">
                     <label class="text-caption font-weight-black ml-1">Email Address</label>
-                    <v-text-field 
-                      v-model="contactForm.email" 
-                      placeholder="john@example.com" 
-                      variant="solo" flat rounded="lg" class="mt-1"
-                      type="email"
-                      required
-                    ></v-text-field>
+                    <v-text-field v-model="contactForm.email" variant="solo" flat rounded="lg" class="mt-1" type="email" required></v-text-field>
                   </v-col>
                   <v-col cols="12" class="mb-4">
                     <label class="text-caption font-weight-black ml-1">Message</label>
-                    <v-textarea 
-                      v-model="contactForm.message" 
-                      placeholder="How can I help you?" 
-                      variant="solo" flat rounded="lg" rows="4" class="mt-1"
-                      required
-                    ></v-textarea>
+                    <v-textarea v-model="contactForm.message" variant="solo" flat rounded="lg" rows="4" class="mt-1" required></v-textarea>
                   </v-col>
                   <v-col cols="12">
-                    <v-btn 
-                      type="submit"
-                      color="primary" block size="x-large" 
-                      class="rounded-lg font-weight-bold text-none shadow-blue" 
-                      height="55"
-                      :loading="loading"
-                    >
+                    <v-btn type="submit" color="primary" block size="x-large" class="rounded-lg font-weight-bold text-none shadow-blue" height="55" :loading="loading">
                       Send Message
                     </v-btn>
                   </v-col>
@@ -233,7 +188,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import axios from 'axios';
+import api from '@/api/api'; // Import your new centralized API instance
 
 // UI State
 const drawer = ref(false);
@@ -253,17 +208,14 @@ const contactForm = ref({
   message: ''
 });
 
-// API Base URL (Update this to your Laravel URL)
-const API_BASE = 'http://127.0.0.1:8000/api/v1';
-
 // Fetch all data from backend
 const fetchPortfolioData = async () => {
   try {
     const [skillsRes, expRes, toolsRes, certsRes] = await Promise.all([
-      axios.get(`${API_BASE}/skills`),
-      axios.get(`${API_BASE}/experiences`),
-      axios.get(`${API_BASE}/tools`),
-      axios.get(`${API_BASE}/certifications`)
+      api.get('/skills'),
+      api.get('/experiences'),
+      api.get('/tools'),
+      api.get('/certifications')
     ]);
 
     coreSkills.value = skillsRes.data;
@@ -279,13 +231,12 @@ const fetchPortfolioData = async () => {
 const submitContact = async () => {
   loading.value = true;
   try {
-    await axios.post(`${API_BASE}/contact`, contactForm.value);
+    await api.post('/contact', contactForm.value);
     alert('Message sent successfully!');
-    // Reset form
     contactForm.value = { full_name: '', email: '', message: '' };
   } catch (error) {
     console.error("Error sending message:", error);
-    alert('Failed to send message. Check console for details.');
+    alert('Failed to send message.');
   } finally {
     loading.value = false;
   }
@@ -303,7 +254,7 @@ const contactLinks = [
 </script>
 
 <style scoped>
-/* Copied exactly from your previous styles */
+/* Keyframes & Animations */
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes slideRight { from { opacity: 0; transform: translateX(-50px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes zoomIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
@@ -314,6 +265,7 @@ const contactLinks = [
 .animate-zoom-in { animation: zoomIn 0.8s ease forwards; }
 .floating-anim { animation: float 5s ease-in-out infinite; }
 
+/* Layout Helpers */
 .min-vh-hero { min-height: 70vh; }
 .leading-tight { line-height: 1.2; }
 .max-width-550 { max-width: 550px; }
@@ -321,9 +273,11 @@ const contactLinks = [
 .hero-img-border { border: 12px solid white; box-shadow: 0 15px 45px rgba(0,0,0,0.08); }
 .border-subtle { border: 1px solid rgba(0,0,0,0.05) !important; }
 
+/* Timeline UI */
 .hollow-dot { width: 14px; height: 14px; border: 2px solid #1976D2; border-radius: 50%; background: white; z-index: 2; margin-top: 8px; }
 .exp-line { width: 2px; flex-grow: 1; background-color: #E3F2FD; margin-top: 4px; }
 
+/* Interactive States */
 .skill-card-animated { transition: all 0.3s ease; }
 .skill-card-animated:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.05); border-color: #1976D2 !important; }
 .tool-card-glow { transition: all 0.3s ease; }

@@ -1,24 +1,67 @@
-FROM php:8.3-fpm
+# FROM php:8.3-fpm
 
-RUN apt-get update && apt-get install -y \
+# RUN apt-get update && apt-get install -y \
+#     git \
+#     curl \
+#     zip \
+#     unzip \
+#     libpq-dev \
+#     libzip-dev
+
+# RUN docker-php-ext-install pdo pdo_pgsql zip
+
+# WORKDIR /var/www
+
+# COPY . .
+
+# RUN curl -sS https://getcomposer.org/installer | php
+# RUN mv composer.phar /usr/local/bin/composer
+
+# RUN composer install
+# RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+# RUN chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+
+# CMD ["php-fpm"]
+FROM php:8.4-fpm
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libzip-dev \
+    unzip \
+    zip \
     git \
     curl \
-    zip \
-    unzip \
-    libpq-dev \
-    libzip-dev
+    vim \
+ && docker-php-ext-configure gd --with-freetype --with-jpeg \
+ && docker-php-ext-install pdo_mysql gd zip \
+ && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN docker-php-ext-install pdo pdo_pgsql zip
+# Install Composer
+RUN curl -sS https://getcomposer.org/installer | php -- \
+    --install-dir=/usr/local/bin --filename=composer
 
-WORKDIR /var/www
+# Change PHP-FPM listen port
+RUN sed -i 's/listen = .*/listen = 9002/' /usr/local/etc/php-fpm.d/zz-docker.conf
 
+# Copy app files
+COPY composer.json composer.lock ./
 COPY . .
 
-RUN curl -sS https://getcomposer.org/installer | php
-RUN mv composer.phar /usr/local/bin/composer
+# Install dependencies
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-RUN composer install
-RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
-RUN chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+# Fix permissions
+RUN chown -R www-data:www-data storage bootstrap/cache \
+ && chmod -R 775 storage bootstrap/cache
+
+# Expose PHP-FPM port
+EXPOSE 9002
 
 CMD ["php-fpm"]
