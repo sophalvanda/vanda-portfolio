@@ -32,9 +32,9 @@ services:
     container_name: vue_frontend
     volumes:
       - frontend_build:/var/www/frontend/dist
-    # FIX: This command copies the internal build files to the shared volume at startup
+    # THIS LINE IS THE FIX: It moves the files and keeps the container alive
     command: >
-      sh -c "cp -rp /app/dist/. /var/www/frontend/dist/ && echo 'Build files synced' && tail -f /dev/null"
+      sh -c "cp -rp /app/dist/. /var/www/frontend/dist/ && echo 'Sync Complete' && tail -f /dev/null"
     networks:
       - vanda-network
 
