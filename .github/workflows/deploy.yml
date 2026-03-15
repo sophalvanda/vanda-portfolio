@@ -24,10 +24,11 @@ jobs:
         docker push ${{ secrets.DOCKER_USERNAME }}/vanda-backend
 
     - name: Build and Push Frontend
-      # CRITICAL: We pass VITE_API_URL as a build-arg so it is baked into the JS files
+      # We pass both VITE_API_URL and VITE_API_BASE_URL to ensure the build catches it
       run: |
         docker build \
           --build-arg VITE_API_URL=http://${{ secrets.SERVER_IP }}/api/v1 \
+          --build-arg VITE_API_BASE_URL=http://${{ secrets.SERVER_IP }}/api/v1 \
           -t ${{ secrets.DOCKER_USERNAME }}/vanda-frontend ./frontend
         docker push ${{ secrets.DOCKER_USERNAME }}/vanda-frontend
 
@@ -44,15 +45,18 @@ jobs:
         script: |
           cd ~/vanda-portfolio
           
-          # Pull latest images
+          # 1. Pull latest images from Docker Hub
           docker pull ${{ secrets.DOCKER_USERNAME }}/vanda-backend
           docker pull ${{ secrets.DOCKER_USERNAME }}/vanda-frontend
 
-          # Stop and remove old containers
+          # 2. Stop and remove old containers to prevent port conflicts
           docker stop laravel_backend vue_frontend || true
           docker rm laravel_backend vue_frontend || true
 
-          # START BACKEND
+          # 3. Create network if it doesn't exist (Safety for IT pros)
+          docker network create vanda-portfolio_default || true
+
+          # 4. START BACKEND
           docker run -d \
             --name laravel_backend \
             --network vanda-portfolio_default \
@@ -60,7 +64,7 @@ jobs:
             -p 9000:9000 \
             ${{ secrets.DOCKER_USERNAME }}/vanda-backend
 
-          # START FRONTEND (Mapping port 80 to Nginx port 80)
+          # 5. START FRONTEND (Mapping port 80 for public access)
           docker run -d \
             --name vue_frontend \
             --network vanda-portfolio_default \
@@ -68,10 +72,10 @@ jobs:
             -p 80:80 \
             ${{ secrets.DOCKER_USERNAME }}/vanda-frontend
 
-          # PERMISSIONS: Fix storage access for Laravel
+          # 6. PERMISSIONS: Ensure Laravel can write logs/cache
           docker exec -u root laravel_backend chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
           docker exec -u root laravel_backend chmod -R 775 /var/www/storage /var/www/bootstrap/cache
           
-          # SYNC: Clear cache and run migrations
+          # 7. REFRESH: Clear Laravel cache and sync database
           docker exec laravel_backend php artisan optimize:clear
           docker exec laravel_backend php artisan migrate --force
