@@ -1,9 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-    // This will use the IP from .env, or fallback to the IP directly
-    baseURL: import.meta.env.VITE_API_URL || 'http://13.239.31.154/api/v1',
-    timeout: 10000,
+    // VITE_ prefix is mandatory for Vue/Vite to pick it up
+    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://13.239.31.154/api/v1',
 });
 
 export default api;
