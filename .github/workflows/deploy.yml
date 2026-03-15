@@ -24,13 +24,17 @@ jobs:
         docker push ${{ secrets.DOCKER_USERNAME }}/vanda-backend
 
     - name: Build and Push Frontend
-      # We pass the API URL here so the frontend knows where to send requests
+      # CRITICAL: We pass VITE_API_URL as a build-arg so it is baked into the JS files
       run: |
         docker build \
-          --build-arg VITE_API_BASE_URL=http://${{ secrets.SERVER_IP }}/api/v1 \
+          --build-arg VITE_API_URL=http://${{ secrets.SERVER_IP }}/api/v1 \
           -t ${{ secrets.DOCKER_USERNAME }}/vanda-frontend ./frontend
         docker push ${{ secrets.DOCKER_USERNAME }}/vanda-frontend
 
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
     - name: Deploy to Server
       uses: appleboy/ssh-action@v0.1.6
       with:
@@ -40,12 +44,15 @@ jobs:
         script: |
           cd ~/vanda-portfolio
           
+          # Pull latest images
           docker pull ${{ secrets.DOCKER_USERNAME }}/vanda-backend
           docker pull ${{ secrets.DOCKER_USERNAME }}/vanda-frontend
 
+          # Stop and remove old containers
           docker stop laravel_backend vue_frontend || true
           docker rm laravel_backend vue_frontend || true
 
+          # START BACKEND
           docker run -d \
             --name laravel_backend \
             --network vanda-portfolio_default \
@@ -53,6 +60,7 @@ jobs:
             -p 9000:9000 \
             ${{ secrets.DOCKER_USERNAME }}/vanda-backend
 
+          # START FRONTEND (Mapping port 80 to Nginx port 80)
           docker run -d \
             --name vue_frontend \
             --network vanda-portfolio_default \
@@ -60,10 +68,10 @@ jobs:
             -p 80:80 \
             ${{ secrets.DOCKER_USERNAME }}/vanda-frontend
 
-          # Critical for IT professionals: Ensure Laravel can write logs
+          # PERMISSIONS: Fix storage access for Laravel
           docker exec -u root laravel_backend chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
           docker exec -u root laravel_backend chmod -R 775 /var/www/storage /var/www/bootstrap/cache
           
-          # Refreshing the application state
-          docker exec laravel_backend php artisan config:clear
+          # SYNC: Clear cache and run migrations
+          docker exec laravel_backend php artisan optimize:clear
           docker exec laravel_backend php artisan migrate --force
