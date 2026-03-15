@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 
 services:
   mysql_db:
@@ -6,40 +6,56 @@ services:
     container_name: mysql_db
     restart: always
     environment:
-      # Only need the root password and database name for initialization
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: vanda_portfolio
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    networks:
+      - vanda-network
 
   backend:
     build: ./backend
     container_name: laravel_backend
-    ports:
-      - "9000:9000"
+    restart: unless-stopped
+    # No need to expose 9000 to the public if Nginx is handling it
     depends_on:
       - mysql_db
+    networks:
+      - vanda-network
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      # Pass the AWS IP here so it gets baked into the JS
+      args:
+        - VITE_API_URL=http://13.239.31.154/api/v1
     container_name: vue_frontend
-    ports:
-      - "5173:5173"
+    # We don't expose 5173 because we want Nginx to serve the static files on Port 80
+    networks:
+      - vanda-network
 
   nginx:
     image: nginx:latest
     container_name: nginx_server
+    restart: unless-stopped
     ports:
       - "80:80"
     volumes:
-      - ./frontend/dist:/var/www/frontend/dist
+      # We use volumes_from or named volumes to share the build files
+      - frontend_build:/var/www/frontend/dist
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - backend
       - frontend
+    networks:
+      - vanda-network
 
-# THIS BLOCK WAS MISSING
+networks:
+  vanda-network:
+    driver: bridge
+
 volumes:
   mysql_data:
+  frontend_build: # This stores the compiled Vue files
