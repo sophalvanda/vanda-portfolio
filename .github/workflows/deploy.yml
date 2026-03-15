@@ -24,8 +24,11 @@ jobs:
         docker push ${{ secrets.DOCKER_USERNAME }}/vanda-backend
 
     - name: Build and Push Frontend
+      # We pass the API URL here so the frontend knows where to send requests
       run: |
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/vanda-frontend ./frontend
+        docker build \
+          --build-arg VITE_API_BASE_URL=http://${{ secrets.SERVER_IP }}/api/v1 \
+          -t ${{ secrets.DOCKER_USERNAME }}/vanda-frontend ./frontend
         docker push ${{ secrets.DOCKER_USERNAME }}/vanda-frontend
 
     - name: Deploy to Server
@@ -37,16 +40,12 @@ jobs:
         script: |
           cd ~/vanda-portfolio
           
-          # Pull latest images
           docker pull ${{ secrets.DOCKER_USERNAME }}/vanda-backend
           docker pull ${{ secrets.DOCKER_USERNAME }}/vanda-frontend
 
-          # Stop and remove old containers
           docker stop laravel_backend vue_frontend || true
           docker rm laravel_backend vue_frontend || true
 
-          # START BACKEND
-          # Note: We use --network so it can talk to your 'db' container
           docker run -d \
             --name laravel_backend \
             --network vanda-portfolio_default \
@@ -54,18 +53,17 @@ jobs:
             -p 9000:9000 \
             ${{ secrets.DOCKER_USERNAME }}/vanda-backend
 
-          # START FRONTEND
           docker run -d \
             --name vue_frontend \
             --network vanda-portfolio_default \
             --restart unless-stopped \
-            -p 80:5173 \
+            -p 80:80 \
             ${{ secrets.DOCKER_USERNAME }}/vanda-frontend
 
-          # FIX PERMISSIONS (The "Permission Denied" Fix)
+          # Critical for IT professionals: Ensure Laravel can write logs
           docker exec -u root laravel_backend chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
           docker exec -u root laravel_backend chmod -R 775 /var/www/storage /var/www/bootstrap/cache
           
-          # RUN MIGRATIONS
+          # Refreshing the application state
+          docker exec laravel_backend php artisan config:clear
           docker exec laravel_backend php artisan migrate --force
-          docker exec laravel_backend php artisan config:cache
