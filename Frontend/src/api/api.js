@@ -1,13 +1,9 @@
 import axios from 'axios';
 
 const api = axios.create({
-    // It will use the variable from .env, or default to localhost if not found
-    baseURL: 'http://13.239.31.154/api/v1', 
+    // This will use the IP from .env, or fallback to the IP directly
+    baseURL: import.meta.env.VITE_API_URL || 'http://13.239.31.154/api/v1',
     timeout: 10000,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-    }
 });
 
 export default api;
