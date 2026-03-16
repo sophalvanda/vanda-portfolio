@@ -30,12 +30,13 @@ services:
       args:
         - VITE_API_URL=http://13.239.31.154/api/v1
     container_name: vue_frontend
+    # Keep container alive so it can maintain the volume
+    tty: true
+    stdin_open: true
     volumes:
-      # - frontend_build:/var/www/frontend/dist
-      - frontend_build:/app/dist
-    # THIS LINE IS THE FIX: It moves the files and keeps the container alive
-    command: >
-      sh -c "cp -rp /app/dist/. /var/www/frontend/dist/ && echo 'Sync Complete' && tail -f /dev/null"
+      - frontend_build:/usr/share/nginx/html
+    # This ensures files are moved into the shared volume at runtime
+    command: sh -c "cp -rp /app/dist/. /usr/share/nginx/html/ && tail -f /dev/null"
     networks:
       - vanda-network
 
@@ -46,7 +47,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - frontend_build:/var/www/frontend/dist
+      - frontend_build:/usr/share/nginx/html
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - backend
