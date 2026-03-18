@@ -29,6 +29,7 @@ services:
       context: ./frontend
       args:
         - VITE_API_URL=http://13.239.31.154/api/v1
+        - NODE_OPTIONS=--max-old-space-size=1024
     container_name: vue_frontend
     # Keep container alive so it can maintain the volume
     tty: true
