@@ -1,19 +1,28 @@
-FROM node:20 AS build-stage
+FROM node:20
+
 WORKDIR /app
 
-# Catch the IP from docker-compose
-ARG VITE_API_URL
-ENV VITE_API_URL=$VITE_API_URL
-
-COPY package*.json ./
-RUN npm install
 COPY . .
 
-# Vite bakes the ENV into /app/dist during this step
+RUN npm install
 RUN npm run build
 
-FROM nginx:alpine
-# Copy to the path nginx_server is actually looking at
-COPY --from=build-stage /app/dist /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["npm", "run", "preview"]
+8. Configure Nginx
+
+Create
+
+nginx/default.conf
+server {
+    listen 80;
+
+    location / {
+        root /var/www/frontend/dist;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /api {
+        proxy_pass http://backend:9000;
+    }
+}
