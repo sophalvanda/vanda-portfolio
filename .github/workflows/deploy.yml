@@ -9,6 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -18,14 +22,15 @@ jobs:
       - name: Build & Push Backend
         uses: docker/build-push-action@v5
         with:
-          context: ./backend
+          context: ./backend  # Ensure this folder exists in your GitHub repo
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/vanda-backend:latest
 
       - name: Build & Push Frontend
         uses: docker/build-push-action@v5
         with:
-          context: ./frontend
+          context: ./frontend # Ensure this folder exists in your GitHub repo
+          # Use your AWS Elastic IP or Domain for the host
           build-args: VITE_API_URL=http://${{ secrets.AWS_HOST }}/api/v1
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/vanda-frontend:latest
@@ -41,15 +46,21 @@ jobs:
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
+            # Create directory if it doesn't exist
+            mkdir -p ~/vanda-portfolio
             cd ~/vanda-portfolio
-            # Update the environment file on server
+            
+            # Pull the latest code from GitHub so the docker-compose.yml is updated
+            if [ -d ".git" ]; then git pull; else git clone git@github.com:${{ github.repository }}.git .; fi
+
+            # Update the environment file
             echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" > .env
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-            echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
             
-            docker-compose pull
-            docker-compose up -d
+            # Use modern 'docker compose'
+            docker compose pull
+            docker compose up -d
             
-            # Fix Permissions and Database
-            docker exec -u root laravel_backend chown -R www-data:www-data /var/www/html/storage
-            docker exec laravel_backend php artisan migrate --force
+            # Execute Laravel commands (Use the container name defined in your compose file)
+            docker exec -u root container_backend chown -R www-data:www-data /var/www/html/storage
+            docker exec container_backend php artisan migrate --force
