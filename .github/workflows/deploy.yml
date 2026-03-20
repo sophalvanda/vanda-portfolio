@@ -62,5 +62,5 @@ jobs:
             docker compose up -d
             
             # Execute Laravel commands (Use the container name defined in your compose file)
-            docker exec -u root container_backend chown -R www-data:www-data /var/www/html/storage
-            docker exec container_backend php artisan migrate --force
+            docker exec -u root laravel_backend chown -R www-data:www-data /var/www/html/storage
+            docker exec laravel_backend php artisan migrate --force
