@@ -1,28 +1,21 @@
-FROM node:20
-
+# frontend/Dockerfile
+# Serve with Nginx
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+FROM node:20-alpine AS build
 WORKDIR /app
-
+COPY package*.json ./
+RUN npm ci
 COPY . .
-
-RUN npm install
 RUN npm run build
 
-CMD ["npm", "run", "preview"]
-8. Configure Nginx
 
-Create
+# Serve with Nginx
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
 
-nginx/default.conf
-server {
-    listen 80;
 
-    location / {
-        root /var/www/frontend/dist;
-        index index.html;
-        try_files $uri $uri/ /index.html;
-    }
 
-    location /api {
-        proxy_pass http://backend:9000;
-    }
-}
