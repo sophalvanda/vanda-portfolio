@@ -1,11 +1,9 @@
-// Example in your API configuration file
 import axios from 'axios';
 
-const apiClient = axios.create({
-  // This will look for the IP during the CI/CD build process
-  baseURL: import.meta.env.VITE_API_URL || 'http://13.239.31.154/api/v1',
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
+// Named export: This allows 'import { api }'
+export const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost/api/v1',
 });
+
+// Default export: This allows 'import api'
+export default api;
