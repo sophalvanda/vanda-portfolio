@@ -63,14 +63,28 @@ jobs:
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
+            # 1. Enter directory and fix ownership immediately
+            mkdir -p ~/vanda-portfolio
             cd ~/vanda-portfolio
-            
-            # This line ensures the .env file is built with the correct secrets
+            sudo chown -R $USER:$USER .
+
+            # 2. Force create the .env file with fresh values
             echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" > .env
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
             echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
             echo "APP_KEY=${{ secrets.APP_KEY }}" >> .env
-            
-            # Now the variables are present, these will work:
+            echo "APP_URL=http://${{ secrets.AWS_HOST }}" >> .env
+
+            # 3. Authenticate with Docker Hub using the Token
+            echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+            # 4. Pull and Start
             docker compose pull
             docker compose up -d --remove-orphans
+
+            # 5. Laravel Setup & Final Permissions Fix
+            docker exec laravel_backend php artisan migrate --force
+            docker exec laravel_backend php artisan config:cache
+            docker exec -u root laravel_backend chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+            
+            echo "🚀 Deployment successful and permissions fixed!"
