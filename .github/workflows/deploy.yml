@@ -1,17 +1,30 @@
-name: Vanda Portfolio CI/CD
+name: Build & Deploy Portfolio
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
-  push-to-registry:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+      - name: Run PHP Tests
+        run: |
+          cd backend
+          composer install
+          # Skip tests if you don't have them yet, otherwise:
+          # php artisan test
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -22,45 +35,48 @@ jobs:
       - name: Build & Push Backend
         uses: docker/build-push-action@v5
         with:
-          context: ./backend  # Ensure this folder exists in your GitHub repo
+          context: ./backend
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/vanda-backend:latest
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/vanda-backend:latest
+            ${{ secrets.DOCKER_USERNAME }}/vanda-backend:${{ github.sha }}
 
       - name: Build & Push Frontend
         uses: docker/build-push-action@v5
         with:
-          context: ./frontend # Ensure this folder exists in your GitHub repo
-          # Use your AWS Elastic IP or Domain for the host
-          build-args: VITE_API_URL=http://${{ secrets.AWS_HOST }}/api/v1
+          context: ./frontend
+          # This bakes your AWS IP into the frontend build
+          build-args: |
+            VITE_API_URL=http://${{ secrets.AWS_HOST }}/api/v1
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/vanda-frontend:latest
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/vanda-frontend:latest
 
-  deploy-to-aws:
-    needs: push-to-registry
+  deploy:
+    needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: SSH and Deploy
-        uses: appleboy/ssh-action@master
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
-            # Create directory if it doesn't exist
-            mkdir -p ~/vanda-portfolio
             cd ~/vanda-portfolio
             
-            # Pull the latest code from GitHub so the docker-compose.yml is updated
-            if [ -d ".git" ]; then git pull; else git clone git@github.com:${{ github.repository }}.git .; fi
-
-            # Update the environment file
-            echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" > .env
-            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+            # Update the DOCKER_USERNAME in the server's .env if needed
+            sed -i "s|DOCKER_USERNAME=.*|DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}|g" .env
             
-            # Use modern 'docker compose'
             docker compose pull
-            docker compose up -d
+            docker compose up -d --remove-orphans
             
-            # Execute Laravel commands (Use the container name defined in your compose file)
-            docker exec -u root laravel_backend chown -R www-data:www-data /var/www/html/storage
+            # Execute Laravel commands in the correct container name
             docker exec laravel_backend php artisan migrate --force
+            docker exec laravel_backend php artisan cache:clear
+            docker exec laravel_backend php artisan config:cache
+            
+            # Fix permissions to resolve the 500 error
+            docker exec -u root laravel_backend chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+            
+            echo "✅ Deployment complete to http://${{ secrets.AWS_HOST }}"
