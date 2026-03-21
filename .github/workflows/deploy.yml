@@ -63,20 +63,29 @@ jobs:
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
+            # 1. Create directory if missing and enter it
+            mkdir -p ~/vanda-portfolio
             cd ~/vanda-portfolio
-            
-            # Update the DOCKER_USERNAME in the server's .env if needed
-            sed -i "s|DOCKER_USERNAME=.*|DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}|g" .env
-            
+
+            # 2. Update the server's .env with the Docker Hub username
+            # This ensures 'docker compose pull' knows which images to grab
+            if [ ! -f .env ]; then touch .env; fi
+            sed -i "s|^DOCKER_USERNAME=.*|DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}|g" .env || echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> .env
+
+            # 3. Pull and Restart
             docker compose pull
             docker compose up -d --remove-orphans
-            
-            # Execute Laravel commands in the correct container name
+
+            # 4. Wait for MySQL to be healthy before migrating
+            echo "Waiting for database..."
+            sleep 10 
+
+            # 5. Laravel Commands
             docker exec laravel_backend php artisan migrate --force
-            docker exec laravel_backend php artisan cache:clear
             docker exec laravel_backend php artisan config:cache
-            
-            # Fix permissions to resolve the 500 error
+            docker exec laravel_backend php artisan route:cache
+
+            # 6. FIX: Permissions (Solves the 500 error)
             docker exec -u root laravel_backend chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
             
-            echo "✅ Deployment complete to http://${{ secrets.AWS_HOST }}"
+            echo "✅ Deployment Successful!"
