@@ -1,4 +1,58 @@
-deploy:
+name: Build & Deploy Portfolio
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+      - name: Run PHP Tests
+        run: |
+          cd backend
+          composer install
+          # Skip tests if you don't have them yet, otherwise:
+          # php artisan test
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build & Push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/vanda-backend:latest
+            ${{ secrets.DOCKER_USERNAME }}/vanda-backend:${{ github.sha }}
+
+      - name: Build & Push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          # This bakes your AWS IP into the frontend build
+          build-args: |
+            VITE_API_URL=http://${{ secrets.AWS_HOST }}/api/v1
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/vanda-frontend:latest
+
+  deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
