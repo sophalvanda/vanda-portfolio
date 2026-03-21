@@ -63,26 +63,14 @@ jobs:
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
-            # 1. Move to project folder
-            mkdir -p ~/vanda-portfolio
             cd ~/vanda-portfolio
-
-            # 2. Pull new images
-            # Ensure your server's .env has DOCKER_USERNAME set
-            docker compose pull
-
-            # 3. Restart containers
-            docker compose up -d --remove-orphans
-
-            # 4. Wait for MySQL (Avoids 'Connection Refused' error)
-            echo "Waiting for MySQL..."
-            sleep 15
-
-            # 5. Laravel Setup
-            docker exec laravel_backend php artisan migrate --force
-            docker exec laravel_backend php artisan config:cache
-
-            # 6. FIX PERMISSIONS (Solves the 500 error)
-            docker exec -u root laravel_backend chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
             
-            echo "🚀 Vanda Portfolio is LIVE!"
+            # This line ensures the .env file is built with the correct secrets
+            echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" > .env
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+            echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
+            echo "APP_KEY=${{ secrets.APP_KEY }}" >> .env
+            
+            # Now the variables are present, these will work:
+            docker compose pull
+            docker compose up -d --remove-orphans
