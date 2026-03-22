@@ -33,10 +33,10 @@ services:
     networks:
       - vanda-network
 
-  # 3. Backend Service (Laravel 11 / PHP-FPM)
+  # 3. Backend Service (Laravel 11)
   backend:
-    # FIX: Ensure no leading slash and use quotes for safety
-    image: "${DOCKER_USERNAME}/vanda-backend:latest"
+    # Changed to hardcoded name to fix the "invalid reference" error
+    image: mbapro/vanda-backend:latest
     container_name: laravel_backend
     restart: always
     env_file: ./backend/.env
@@ -54,16 +54,16 @@ services:
     networks:
       - vanda-network
 
-  # 4. Frontend Service (Vue.js / Vite)
+  # 4. Frontend Service (Vue.js)
   frontend:
-    # FIX: Ensure no leading slash and use quotes for safety
-    image: "${DOCKER_USERNAME}/vanda-frontend:latest"
+    # Changed to hardcoded name
+    image: mbapro/vanda-frontend:latest
     container_name: vue_frontend
     restart: always
     networks:
       - vanda-network
 
-  # 5. Web Server Service (Nginx Proxy)
+  # 5. Web Server Service (Nginx)
   webserver:
     image: nginx:stable-alpine
     container_name: nginx_server
