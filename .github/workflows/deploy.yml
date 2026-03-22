@@ -63,24 +63,20 @@ jobs:
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
-            # 1. Fix folder ownership so we can write files
-            sudo mkdir -p ~/vanda-portfolio
-            sudo chown -R $USER:$USER ~/vanda-portfolio
             cd ~/vanda-portfolio
-
-            # 2. Force write the .env file (using tee to avoid permission errors)
-            echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" | tee .env > /dev/null
-            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" | tee -a .env > /dev/null
-            echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" | tee -a .env > /dev/null
-            echo "APP_KEY=${{ secrets.APP_KEY }}" | tee -a .env > /dev/null
-
-            # 3. Pull and Start (Hardcoding 'sudo' ensures Docker has permission)
-            sudo docker compose pull
-            sudo docker compose up -d --remove-orphans
-
-            # 4. Final Laravel Setup
-            sleep 10
-            sudo docker exec laravel_backend php artisan migrate --force
-            sudo docker exec -u root laravel_backend chown -R www-data:www-data /var/www/html/storage
             
-            echo "🚀 Deployment finished successfully!"
+            # 1. Manually set the variable for this session
+            export DOCKER_USERNAME=mbapro
+            
+            # 2. Pull and Start (Using the variable explicitly)
+            DOCKER_USERNAME=mbapro docker compose pull
+            DOCKER_USERNAME=mbapro docker compose up -d --remove-orphans
+
+            # 3. Wait for DB to be ready
+            sleep 10
+
+            # 4. Run Laravel commands (These failed before because the container didn't exist)
+            docker exec laravel_backend php artisan migrate --force
+            docker exec -u root laravel_backend chown -R www-data:www-data /var/www/html/storage
+            
+            echo "🚀 Actual Deployment Success!"
