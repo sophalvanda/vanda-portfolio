@@ -43,26 +43,22 @@ jobs:
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
-            # 1. Ensure directory exists and move into it
-            mkdir -p ~/vanda-portfolio
             cd ~/vanda-portfolio
+            
+            # 1. Pull images (This will now use the hardcoded names in your compose file)
+            docker compose pull
 
-            # 2. Check if docker-compose.yml exists, if not, create a basic one
-            if [ ! -f "docker-compose.yml" ]; then
-              echo "Error: docker-compose.yml not found. Please create it on the server."
-              exit 1
-            fi
+            # 2. Restart the containers
+            docker compose up -d --remove-orphans
 
-            # 3. Pull and Restart
-            sudo docker compose pull
-            sudo docker compose up -d --remove-orphans
-
-            # 4. Wait for containers to initialize
-            echo "Waiting for services to start..."
+            # 3. Wait for Database to be Healthy
+            echo "Waiting for MySQL to wake up..."
             sleep 20
 
-            # 5. Run Laravel setup (Using sudo to ensure permissions)
-            sudo docker exec laravel_backend php artisan migrate --force || echo "Migration failed"
-            sudo docker exec -u root laravel_backend chown -R www-data:www-data /var/www/html/storage
+            # 4. Run Laravel setup inside the container
+            # Using || true ensures the script keeps going even if a command fails
+            docker exec laravel_backend php artisan migrate --force || echo "Migration failed"
+            docker exec laravel_backend php artisan config:cache || echo "Cache failed"
+            docker exec -u root laravel_backend chown -R www-data:www-data /var/www/html/storage
             
-            echo "🚀 Portfolio is LIVE!"
+            echo "🚀 Deployment sequence finished!"
