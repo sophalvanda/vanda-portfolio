@@ -45,7 +45,7 @@ jobs:
           script: |
             cd ~/vanda-portfolio
             
-            # 1. Pull the new images
+            # 1. Pull images (This will now use the hardcoded names in your compose file)
             docker compose pull
 
             # 2. Restart the containers
@@ -56,8 +56,9 @@ jobs:
             sleep 20
 
             # 4. Run Laravel setup inside the container
-            docker exec laravel_backend php artisan migrate --force
-            docker exec laravel_backend php artisan config:cache
+            # Using || true ensures the script keeps going even if a command fails
+            docker exec laravel_backend php artisan migrate --force || echo "Migration failed"
+            docker exec laravel_backend php artisan config:cache || echo "Cache failed"
             docker exec -u root laravel_backend chown -R www-data:www-data /var/www/html/storage
             
-            echo "🚀 Portfolio is LIVE at http://${{ secrets.AWS_HOST }}"
+            echo "🚀 Deployment sequence finished!"
