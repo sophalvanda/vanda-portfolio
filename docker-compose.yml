@@ -33,6 +33,7 @@ services:
     image: mbapro/vanda-backend:latest
     container_name: laravel_backend
     restart: always
+    # This tells PHP exactly where to look for artisan
     working_dir: /var/www/html
     env_file: ./backend/.env
     environment:
@@ -41,7 +42,7 @@ services:
       REDIS_HOST: redis_cache
       REDIS_PASSWORD: "${REDIS_PASSWORD}"
     volumes:
-      # CRITICAL: Maps your full local Laravel code into the container
+      # Maps your local AWS 'backend' folder to the container's root
       - ./backend:/var/www/html
       - backend_storage:/var/www/html/storage
     depends_on:
@@ -67,7 +68,6 @@ services:
       - "80:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-      # Nginx needs to see the backend files to serve static assets
       - ./backend:/var/www/html:ro
     depends_on:
       - backend
