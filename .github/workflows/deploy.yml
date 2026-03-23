@@ -21,7 +21,7 @@ jobs:
         with:
           context: ./backend
           push: true
-          tags: mbapro/vanda-backend:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/vanda-backend:latest
 
       - name: Build & Push Frontend
         uses: docker/build-push-action@v5
@@ -30,12 +30,25 @@ jobs:
           build-args: |
             VITE_API_URL=http://${{ secrets.AWS_HOST }}/api/v1
           push: true
-          tags: mbapro/vanda-frontend:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/vanda-frontend:latest
 
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
+      # 1. Copy the docker-compose and nginx config to the server
+      - name: Copy config files to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USER }}
+          key: ${{ secrets.AWS_SSH_KEY }}
+          source: "docker-compose.yml,nginx/default.conf"
+          target: "~/vanda-portfolio/"
+
+      # 2. SSH into the server and run the deployment commands
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -45,20 +58,22 @@ jobs:
           script: |
             cd ~/vanda-portfolio
             
-            # 1. Pull images (This will now use the hardcoded names in your compose file)
-            docker compose pull
+            # Use the Secret to pull images safely
+            DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} docker compose pull
 
-            # 2. Restart the containers
-            docker compose up -d --remove-orphans
+            # Restart containers with the new images
+            DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} docker compose up -d --remove-orphans
 
-            # 3. Wait for Database to be Healthy
-            echo "Waiting for MySQL to wake up..."
+            # Wait for MySQL to initialize
+            echo "Waiting for database..."
             sleep 20
 
-            # 4. Run Laravel setup inside the container
-            # Using || true ensures the script keeps going even if a command fails
-            docker exec laravel_backend php artisan migrate --force || echo "Migration failed"
-            docker exec laravel_backend php artisan config:cache || echo "Cache failed"
+            # Run Laravel optimizations and migrations
+            docker exec laravel_backend php artisan migrate --force
+            docker exec laravel_backend php artisan config:cache
+            docker exec laravel_backend php artisan view:clear
+            
+            # Ensure the server can write to the storage folder
             docker exec -u root laravel_backend chown -R www-data:www-data /var/www/html/storage
             
-            echo "🚀 Deployment sequence finished!"
+            echo "✅ Portfolio updated and LIVE!"
