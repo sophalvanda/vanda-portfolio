@@ -33,7 +33,7 @@ services:
     restart: always
     env_file: ./backend/.env
     environment:
-      DB_HOST: db
+      DB_HOST: mysql_db
       DB_PASSWORD: "${DB_PASSWORD}"
       REDIS_PASSWORD: "${REDIS_PASSWORD}"
     volumes:
