@@ -1,9 +1,8 @@
 import axios from 'axios';
 
-// Named export: This allows 'import { api }'
-export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost/api/v1',
+const api = axios.create({
+    // This line dynamically picks the URL based on which .env is active
+    baseURL: import.meta.env.VITE_API_BASE_URL
 });
 
-// Default export: This allows 'import api'
 export default api;
