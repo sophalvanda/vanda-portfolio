@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-// Add 'export' here
+// This is a NAMED EXPORT
 export const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL
+    // Make sure this variable name matches what you use in GitHub Actions
+    baseURL: import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '/api/v1'
 });
